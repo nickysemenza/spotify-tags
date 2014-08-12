@@ -14,3 +14,4 @@
 Route::get('/', array('as' => 'home', function() {
     return View::make('test');
 }));
+Route::get('/test','SongController@test');

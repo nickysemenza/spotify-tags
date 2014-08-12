@@ -7,7 +7,7 @@
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            {{ HTML::linkAction('home', 'Project Name', array(), array('class' => 'navbar-brand')) }}
+            {{ HTML::linkAction('home', 'Spotify Tags', array(), array('class' => 'navbar-brand')) }}
         </div>
 
         <div class="collapse navbar-collapse" id="nav-collapse">
