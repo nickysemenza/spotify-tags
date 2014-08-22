@@ -15,3 +15,7 @@ Route::get('/', array('as' => 'home', function() {
     return View::make('test');
 }));
 Route::get('/test','SongController@test');
+Route::get('/add','SongController@addFromForm');
+Route::post('/add','SongController@addFromForm');
+
+
