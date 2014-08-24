@@ -2,7 +2,7 @@
 
 @section('content')
 
-{{var_dump($data)}}
+{{var_dump($songData)}}
 
 
 @stop
