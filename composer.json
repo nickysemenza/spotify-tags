@@ -5,7 +5,8 @@
 	"license": "MIT",
 	"require": {
 		"laravel/framework": "4.2.*",
-		"mashape/unirest-php" : "dev-master"	
+		"mashape/unirest-php" : "dev-master",
+		"itsgoingd/clockwork": "1.*"
 	},
 	"autoload": {
 		"classmap": [
