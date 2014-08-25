@@ -23,5 +23,8 @@ Route::get('/auth/spotify/callback','SongController@spotifyCallback');
 Route::post('/add','SongController@addFromForm');
 
 Route::get('/profile','SongController@getSpotifyProfile');
+Route::get('/getTagsJSON','SongController@getTagsJSON');
+Route::get('/addTrackToPlaylist/{playlist_id}/{track_id}','SongController@addTrackToPlaylist');
+Route::get('/removeTrackFromPlaylist/{playlist_id}/{track_id}','SongController@removeTrackFromPlaylist');
 
 

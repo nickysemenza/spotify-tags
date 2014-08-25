@@ -9,6 +9,7 @@
     <title>@section('title')@show</title>
     @section('css')
     {{ HTML::style('css/bootstrap.min.css'); }}
+    {{ HTML::style('css/bootstrap-tagsinput.css'); }}
     {{ HTML::style('//maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css'); }}
     @show
 
@@ -16,6 +17,8 @@
 
     {{ HTML::script('//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js'); }}
     {{ HTML::script('js/bootstrap.min.js'); }}
+    {{ HTML::script('js/bootstrap-tagsinput.min.js'); }}
+    {{ HTML::script('js/typeahead.js'); }}
     @show
 
     @section('append_header')@show
