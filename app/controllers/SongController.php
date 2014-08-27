@@ -14,7 +14,7 @@ class SongController extends BaseController {
             array(
                 "client_id" => "d27efb143d5d4719959e523a5cbfa3c4",
                 "response_type" => "code",
-                "redirect_uri"=>'http://spotifytags/auth/spotify/callback',
+                "redirect_uri"=>URL::to('/auth/spotify/callback'),
                 "show_dialog"=>"true",
                 "scope"=>implode(' ',array('user-read-private', 'user-read-email','user-library-read','user-library-modify','playlist-modify','playlist-modify-public','playlist-modify-private'))
             )
@@ -31,7 +31,7 @@ class SongController extends BaseController {
             "client_id" => "d27efb143d5d4719959e523a5cbfa3c4",
             "client_secret"=>"5a37334c1e994ae0ba07f6cac6366233",
             "grant_type" => "authorization_code",
-            "redirect_uri"=>'http://spotifytags/auth/spotify/callback',
+            "redirect_uri"=>URL::to('/auth/spotify/callback'),
             "code"=>$_GET['code']
         );
         foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
@@ -101,7 +101,7 @@ class SongController extends BaseController {
         {
             $playlistName=$data['items'][$x]['name'];
             $id=$data['items'][$x]['id'];
-            if(substr($playlistName,0,3)=="st_")
+            //if(substr($playlistName,0,3)=="st_")
             {
 //                echo($playlistName."    ".$id);
 //                echo("<br>--------</br>");
@@ -121,11 +121,13 @@ class SongController extends BaseController {
                     //var_dump($playlistData['tracks']['items'][$y]['track']['id']);
                     //var_dump($playlistData['tracks']['items'][$y]['track']['name']);
 //                    echo('<hr>');
-                    $temp[$playlistData['tracks']['items'][$y]['track']['id']]['tags'][]=array("tagname"=>substr($playlistName,3),"playlist_id"=>$id);
+                    //$temp[$playlistData['tracks']['items'][$y]['track']['id']]['tags'][]=array("tagname"=>substr($playlistName,3),"playlist_id"=>$id);
+                    $temp[$playlistData['tracks']['items'][$y]['track']['id']]['tags'][]=array("tagname"=>$playlistName,"playlist_id"=>$id);
                     $temp[$playlistData['tracks']['items'][$y]['track']['id']]['name']=$playlistData['tracks']['items'][$y]['track']['name'];
                     $temp[$playlistData['tracks']['items'][$y]['track']['id']]['artists']=implode(', ', array_column($playlistData['tracks']['items'][$y]['track']['artists'], 'name'));
 
-                    $taginfo=array('name'=>substr($playlistName,3),'playlist_id'=>$id,'user_id'=>Auth::user()->id);
+                    //$taginfo=array('name'=>substr($playlistName,3),'playlist_id'=>$id,'user_id'=>Auth::user()->id);
+                    $taginfo=array('name'=>$playlistName,'playlist_id'=>$id,'user_id'=>Auth::user()->id);
                     if(!in_array($taginfo,$tagsAndPlaylistIDs,true))
                     {
                     array_push($tagsAndPlaylistIDs,$taginfo);
