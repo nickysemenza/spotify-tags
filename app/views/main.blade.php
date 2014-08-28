@@ -52,23 +52,31 @@
         background-color: #428bca;
     }
 </style>
-
-<table  class="table table-bordered table-striped">
+<div class="row">
 @foreach($tagsAndPlaylistIDs as $eachPlaylistData)
-    <tr>
-<td>{{$eachPlaylistData['name']}}</td>
-<td><iframe src="https://embed.spotify.com/?uri=spotify:user:{{$data['username']}}:playlist:{{$eachPlaylistData['playlist_id']}}" width="300" height="80" frameborder="0" allowtransparency="true"></iframe></td>
-    </tr>
-    @endforeach
-</table>
+    <div class="col-xs-4">
+        <table  class="table table-bordered table-striped">
 
+<tr><td><iframe src="https://embed.spotify.com/?uri=spotify:user:{{$data['username']}}:playlist:{{$eachPlaylistData['playlist_id']}}" width="300" height="80" frameborder="0" allowtransparency="true"></iframe></td>
+</tr></tr>
+            <tr><td><h3>{{$eachPlaylistData['name']}}</h3></td></tr>
+
+        </table>
+    </div>
+    @endforeach
+
+
+
+
+
+</div>
 
 
 <hr>
 <table  class="table table-bordered table-striped">
 @foreach ( $songData as $key => $val )
 <tr>
-<td>{{ $key }}</td>
+<!--<td>{{ $key }}</td>-->
 <td>{{$val['name']}}</td>
     <td>{{$val['artists']}}</td>
     <td>
@@ -83,9 +91,19 @@
 </table>
 
 @foreach($tagsAndPlaylistIDs as $eachPlaylistData)
-<input type="hidden" id="id_playlist_{{$eachPlaylistData['name']}}" data-id="{{$eachPlaylistData['playlist_id']}}">
-@endforeach
+<!--<input type="hidden" id="id_playlist_{{str_replace('%','-',urlencode($eachPlaylistData['name']))}}" data-id="{{$eachPlaylistData['playlist_id']}}">-->
+<input2 type="hidden" id="id_playlist_{{bin2hex($eachPlaylistData['name'])}}" data-id="{{$eachPlaylistData['playlist_id']}}">
 
+@endforeach
+<script>
+    function toHex(str) {
+        var hex = '';
+        for(var i=0;i<str.length;i++) {
+            hex += ''+str.charCodeAt(i).toString(16);
+        }
+        return hex;
+    }
+</script>
 <script>
 
     var playlistnames = new Bloodhound({
@@ -113,12 +131,9 @@
 
 
     $('input').on('itemAdded', function(event) {
-        console.log(event.item+" added!")
         var song_id=$(this).attr('id');
-        var playlist_id=$('#id_playlist_'+event.item).data("id");
-        // event.item: contains the item
-
-
+        var playlist_id=$('#id_playlist_'+toHex(event.item)).data("id");
+        console.log(event.item +" ("+playlist_id+") tag added to song "+song_id);
         form_data = {
 
         };
@@ -137,10 +152,8 @@
     });
     $('input').on('itemRemoved', function(event) {
         var song_id=$(this).attr('id');
-        var playlist_id=$('#id_playlist_'+event.item).data("id");
-//        console.log('#id_playlist_'+event.item);
-//        console.log(event.item +" ("+playlist_id+") tag removed from song "+song_id);
-        // event.item: contains the item
+        var playlist_id=$('#id_playlist_'+toHex(event.item)).data("id");
+        console.log(event.item +" ("+playlist_id+") tag removed from song "+song_id);
 
 
         form_data = {

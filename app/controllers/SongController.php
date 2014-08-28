@@ -22,8 +22,13 @@ class SongController extends BaseController {
         return Redirect::to($response->body->redirect);
 
     }
-    public function spotifyCallback()
+    public function spotifyCallback($code="0")
     {
+        error_log($code);
+        if($code=="0")
+        {
+            $code=$_GET['code'];
+        }
         //post request
         $fields_string="";
         $url = 'https://accounts.spotify.com/api/token';
@@ -32,7 +37,7 @@ class SongController extends BaseController {
             "client_secret"=>"5a37334c1e994ae0ba07f6cac6366233",
             "grant_type" => "authorization_code",
             "redirect_uri"=>URL::to('/auth/spotify/callback'),
-            "code"=>$_GET['code']
+            "code"=>$code
         );
         foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
         rtrim($fields_string, '&');
@@ -92,6 +97,11 @@ class SongController extends BaseController {
         $data = json_decode(curl_exec($ch),true);
         curl_close($ch);
 
+        if(isset($data['error']['message']))
+        {
+            //=="The access token expired"
+            $this->spotifyCallback(Auth::user()->refresh_token);
+        }
 
         $temp=array();
 //        var_dump($data);

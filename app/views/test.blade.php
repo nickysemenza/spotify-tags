@@ -5,5 +5,7 @@
 
 <hr>
 
-
+@if(Auth::check())
+yo
+@endif
 @stop
