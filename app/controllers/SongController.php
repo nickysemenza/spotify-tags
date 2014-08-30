@@ -1,4 +1,5 @@
 <?php
+$global_response=array();
 class SongController extends BaseController {
 
 	public function test()
@@ -88,6 +89,8 @@ class SongController extends BaseController {
     public function getSpotifyProfile()
     {
 
+        global $global_response;
+
         //get request
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, "https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists");
@@ -101,45 +104,68 @@ class SongController extends BaseController {
         {
             $this->spotifyCallback(Auth::user()->refresh_token);
         }
+        $rc = new RollingCurl(array($this, "request_callback"));
+        $rc->window_size = 200;
 
         $temp=array();
         $tagsAndPlaylistIDs=array();
         for($x=0; $x<$data['limit']; $x++)
         {
-            $playlistName=$data['items'][$x]['name'];
             $id=$data['items'][$x]['id'];
+            $rc->request("https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id);
+        }
+
+        $rc->options = array(CURLOPT_HTTPHEADER => array("Authorization: Bearer ".Auth::user()->access_token), CURLOPT_RETURNTRANSFER => 1);
+        $test = $rc->execute();
+
+        foreach($global_response as $eachPlaylist)
+        {
+
+            $playlistName=$eachPlaylist['name'];
+            if($eachPlaylist['tracks']['total']<$eachPlaylist['tracks']['limit'])
             {
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, "https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-                curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-                curl_setopt($ch, CURLOPT_HTTPHEADER,array("Authorization: Bearer ".Auth::user()->access_token));
-                $playlistData = json_decode(curl_exec($ch),true);
-                curl_close($ch);
+                $stopAt=$eachPlaylist['tracks']['total'];
+            }
+            else
+            {
+                $stopAt=$eachPlaylist['tracks']['limit'];
+            }
+            for($y=0; $y<$stopAt; $y++)
+            {
 
-                for($y=0; $y<$playlistData['tracks']['total']; $y++)
+                $temp[$eachPlaylist['tracks']['items'][$y]['track']['id']]['tags'][]=array("tagname"=>$playlistName,"playlist_id"=>$id);
+                $temp[$eachPlaylist['tracks']['items'][$y]['track']['id']]['name']=$eachPlaylist['tracks']['items'][$y]['track']['name'];
+                $temp[$eachPlaylist['tracks']['items'][$y]['track']['id']]['artists']=implode(', ', array_column($eachPlaylist['tracks']['items'][$y]['track']['artists'], 'name'));
+                $taginfo=array('name'=>$playlistName,'playlist_id'=>$eachPlaylist['id'],'user_id'=>Auth::user()->id);
+                if(!in_array($taginfo,$tagsAndPlaylistIDs,true))
                 {
-                    $temp[$playlistData['tracks']['items'][$y]['track']['id']]['tags'][]=array("tagname"=>$playlistName,"playlist_id"=>$id);
-                    $temp[$playlistData['tracks']['items'][$y]['track']['id']]['name']=$playlistData['tracks']['items'][$y]['track']['name'];
-                    $temp[$playlistData['tracks']['items'][$y]['track']['id']]['artists']=implode(', ', array_column($playlistData['tracks']['items'][$y]['track']['artists'], 'name'));
-                    $taginfo=array('name'=>$playlistName,'playlist_id'=>$id,'user_id'=>Auth::user()->id);
-                    if(!in_array($taginfo,$tagsAndPlaylistIDs,true))
-                    {
                     array_push($tagsAndPlaylistIDs,$taginfo);
-                    }
-
                 }
-
 
             }
 
+
         }
+
+
+
         $affectedRows = Tags::where('user_id', '=', Auth::user()->id)->delete();
         Tags::insert($tagsAndPlaylistIDs);
         $songData=$temp;
         $data['username']=Auth::id();
         return View::make('main',compact('songData','tagsAndPlaylistIDs','data'));
 
+    }
+
+    function request_callback($response, $info) {
+        global $global_response;
+        //var_dump(json_decode($response,true));
+//        //print_r($info);
+//        echo("<br>");
+        //array_push($global_response,json_decode($response,true));
+        $global_response[]=json_decode($response,true);
+//        var_dump($global_response);
+        //return $response;
     }
     public function getTagsJSON()
     {

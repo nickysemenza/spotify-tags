@@ -6,7 +6,8 @@
 	"require": {
 		"laravel/framework": "4.2.*",
 		"mashape/unirest-php" : "dev-master",
-		"itsgoingd/clockwork": "1.*"
+		"itsgoingd/clockwork": "1.*",
+        "stalxed/rollingcurl": "dev-master"
 	},
 	"autoload": {
 		"classmap": [
