@@ -200,5 +200,11 @@ class SongController extends BaseController {
         //var_dump($result);
         error_log("removing track ".$track_id." from playlist ".$playlist_id);
     }
+    public function jsNative()
+    {
+        $data['token']=Auth::user()->access_token;
+        return View::make('v2',compact('data'));
+
+    }
 
 }

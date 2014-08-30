@@ -15,12 +15,10 @@ Route::get('/', array('as' => 'home', function() {
     return View::make('test');
 }));
 Route::get('/test','SongController@test');
-Route::get('/add','SongController@addFromForm');
 
 
 Route::get('/auth/spotify','SongController@spotifyAuth');
 Route::get('/auth/spotify/callback','SongController@spotifyCallback');
-Route::post('/add','SongController@addFromForm');
 
 Route::get('/profile','SongController@getSpotifyProfile');
 Route::get('/getTagsJSON','SongController@getTagsJSON');
@@ -28,3 +26,6 @@ Route::get('/addTrackToPlaylist/{playlist_id}/{track_id}','SongController@addTra
 Route::get('/removeTrackFromPlaylist/{playlist_id}/{track_id}','SongController@removeTrackFromPlaylist');
 
 
+
+
+Route::get('/2', 'SongController@jsnative');
