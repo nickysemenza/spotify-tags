@@ -99,24 +99,16 @@ class SongController extends BaseController {
 
         if(isset($data['error']['message']))
         {
-            //=="The access token expired"
             $this->spotifyCallback(Auth::user()->refresh_token);
         }
 
         $temp=array();
-//        var_dump($data);
-        //var_dump($data['items']['4']);
         $tagsAndPlaylistIDs=array();
         for($x=0; $x<$data['limit']; $x++)
         {
             $playlistName=$data['items'][$x]['name'];
             $id=$data['items'][$x]['id'];
-            //if(substr($playlistName,0,3)=="st_")
             {
-//                echo($playlistName."    ".$id);
-//                echo("<br>--------</br>");
-
-
                 $ch = curl_init();
                 curl_setopt($ch, CURLOPT_URL, "https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id);
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -127,16 +119,9 @@ class SongController extends BaseController {
 
                 for($y=0; $y<$playlistData['tracks']['total']; $y++)
                 {
-                    //var_dump($playlistData['tracks']['items'][$y]);
-                    //var_dump($playlistData['tracks']['items'][$y]['track']['id']);
-                    //var_dump($playlistData['tracks']['items'][$y]['track']['name']);
-//                    echo('<hr>');
-                    //$temp[$playlistData['tracks']['items'][$y]['track']['id']]['tags'][]=array("tagname"=>substr($playlistName,3),"playlist_id"=>$id);
                     $temp[$playlistData['tracks']['items'][$y]['track']['id']]['tags'][]=array("tagname"=>$playlistName,"playlist_id"=>$id);
                     $temp[$playlistData['tracks']['items'][$y]['track']['id']]['name']=$playlistData['tracks']['items'][$y]['track']['name'];
                     $temp[$playlistData['tracks']['items'][$y]['track']['id']]['artists']=implode(', ', array_column($playlistData['tracks']['items'][$y]['track']['artists'], 'name'));
-
-                    //$taginfo=array('name'=>substr($playlistName,3),'playlist_id'=>$id,'user_id'=>Auth::user()->id);
                     $taginfo=array('name'=>$playlistName,'playlist_id'=>$id,'user_id'=>Auth::user()->id);
                     if(!in_array($taginfo,$tagsAndPlaylistIDs,true))
                     {
@@ -149,12 +134,9 @@ class SongController extends BaseController {
             }
 
         }
-        Clockwork::info($tagsAndPlaylistIDs);
-
         $affectedRows = Tags::where('user_id', '=', Auth::user()->id)->delete();
         Tags::insert($tagsAndPlaylistIDs);
         $songData=$temp;
-        $data=array();
         $data['username']=Auth::id();
         return View::make('main',compact('songData','tagsAndPlaylistIDs','data'));
 
