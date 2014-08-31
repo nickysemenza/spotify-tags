@@ -52,23 +52,24 @@
         background-color: #428bca;
     }
 </style>
+<h2>Your Playlists<small> (just click play on one!)</small></h2>
 <div class="row">
 @foreach($tagsAndPlaylistIDs as $eachPlaylistData)
     <div class="col-xs-4">
         <table  class="table table-bordered table-striped">
-
-<tr><td><iframe src="https://embed.spotify.com/?uri=spotify:user:{{$data['username']}}:playlist:{{$eachPlaylistData['playlist_id']}}" width="300" height="80" frameborder="0" allowtransparency="true"></iframe></td>
-</tr></tr>
-            <tr><td><h3>{{$eachPlaylistData['name']}}</h3></td></tr>
-
+            <tr>
+                <td>
+                    <h4>{{$eachPlaylistData['name']}}</h4>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <iframe src="https://embed.spotify.com/?uri=spotify:user:{{$data['username']}}:playlist:{{$eachPlaylistData['playlist_id']}}" width="300" height="80" frameborder="0" allowtransparency="true"></iframe>
+                </td>
+            </tr>
         </table>
     </div>
-    @endforeach
-
-
-
-
-
+@endforeach
 </div>
 
 
@@ -76,8 +77,9 @@
 <table  class="table table-bordered table-striped">
 @foreach ( $songData as $key => $val )
 <tr>
-<!--<td>{{ $key }}</td>-->
+<td>{{ $key }}</td>
 <td>{{$val['name']}}</td>
+    <?php error_log($key); ?>
     <td>{{$val['artists']}}</td>
     <td>
         <?php $tagNames=array();?>
@@ -91,9 +93,7 @@
 </table>
 
 @foreach($tagsAndPlaylistIDs as $eachPlaylistData)
-<!--<input type="hidden" id="id_playlist_{{str_replace('%','-',urlencode($eachPlaylistData['name']))}}" data-id="{{$eachPlaylistData['playlist_id']}}">-->
 <input2 type="hidden" id="id_playlist_{{bin2hex($eachPlaylistData['name'])}}" data-id="{{$eachPlaylistData['playlist_id']}}">
-
 @endforeach
 <script>
     function toHex(str) {

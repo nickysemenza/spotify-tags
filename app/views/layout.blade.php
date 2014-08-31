@@ -29,8 +29,12 @@
 <div class="container" style="margin-top:20px;">
     <h1 id="heading">@section('append_heading')@show</h1>
     @yield('content')
+    <footer>
+        <p>&copy; Nicky Semenza 2014</p>
+    </footer>
 </div>
 @section('bottom_js')
 @show
+
 </body>
 </html>
