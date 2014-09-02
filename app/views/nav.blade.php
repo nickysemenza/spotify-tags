@@ -12,7 +12,7 @@
 
         <div class="collapse navbar-collapse" id="nav-collapse">
             <ul class="nav navbar-nav">
-                <li><a href="{{action('SongController@getSpotifyProfile')}}">Manage you songs</a></li>
+                <li><a href="{{action('SongController@getSpotifyProfile')}}">Manage your songs</a></li>
             </ul>
         </div>
         <!-- /.navbar-collapse -->

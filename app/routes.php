@@ -12,7 +12,7 @@
 */
 
 Route::get('/', array('as' => 'home', function() {
-    return View::make('test');
+    return View::make('home');
 }));
 Route::get('/test','SongController@test');
 
@@ -24,8 +24,3 @@ Route::get('/profile','SongController@getSpotifyProfile');
 Route::get('/getTagsJSON','SongController@getTagsJSON');
 Route::get('/addTrackToPlaylist/{playlist_id}/{track_id}','SongController@addTrackToPlaylist');
 Route::get('/removeTrackFromPlaylist/{playlist_id}/{track_id}','SongController@removeTrackFromPlaylist');
-
-
-
-
-Route::get('/2', 'SongController@jsnative');
