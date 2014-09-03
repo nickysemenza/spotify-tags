@@ -20,26 +20,42 @@ class SongController extends BaseController {
         );
         return Redirect::away("https://accounts.spotify.com/authorize?".http_build_query($params) . "\n");
     }
-    public function spotifyCallback($code="0",$type="intial")
+    public function spotifyCallback($code="0",$type="initial")
     {
-        error_log($code);
-        if($code=="0")
-        {
-            $code=$_GET['code'];
+        $ch = curl_init();
+        switch($type){
+            case "initial":
+                error_log($code);
+                if($code=="0")
+                {
+                    $code=$_GET['code'];
+                }
+
+                $fields = array(
+                    "client_id" => "d27efb143d5d4719959e523a5cbfa3c4",
+                    "client_secret"=>"5a37334c1e994ae0ba07f6cac6366233",
+                    "grant_type" => "authorization_code",
+                    "redirect_uri"=>URL::to('/auth/spotify/callback'),
+                    "code"=>$code
+                );
+            break;
+            case "refresh":
+                error_log("going to try to refresh token");
+                $fields = array(
+                    "refresh_token" => Auth::user()->refresh_token,
+                    "grant_type" => "refresh_token"
+                );
+                curl_setopt($ch, CURLOPT_HTTPHEADER,array("Authorization: Basic ".base64_encode("d27efb143d5d4719959e523a5cbfa3c4:5a37334c1e994ae0ba07f6cac6366233")));
+                break;
         }
+
         //post request
         $fields_string="";
         $url = 'https://accounts.spotify.com/api/token';
-        $fields = array(
-            "client_id" => "d27efb143d5d4719959e523a5cbfa3c4",
-            "client_secret"=>"5a37334c1e994ae0ba07f6cac6366233",
-            "grant_type" => "authorization_code",
-            "redirect_uri"=>URL::to('/auth/spotify/callback'),
-            "code"=>$code
-        );
+
         foreach($fields as $key=>$value) { $fields_string .= $key.'='.$value.'&'; }
         rtrim($fields_string, '&');
-        $ch = curl_init();
+
         curl_setopt($ch,CURLOPT_URL, $url);
         curl_setopt($ch,CURLOPT_POST, count($fields));
         curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
@@ -50,7 +66,15 @@ class SongController extends BaseController {
         $result = curl_exec($ch);
         $callbackResult=json_decode($result,true);
 
+
         curl_close($ch);
+
+        ob_start();
+        print_r($callbackResult);
+        $contents = ob_get_contents();
+        ob_end_clean();
+        error_log($contents);
+
 
         //var_dump($callbackResult); exit;
         //register/login/save token to DB
@@ -61,7 +85,15 @@ class SongController extends BaseController {
         curl_setopt($ch, CURLOPT_HTTPHEADER,array("Authorization: Bearer ".$callbackResult['access_token'],"Content-Type: application/json"));
         $data = json_decode(curl_exec($ch),true);
         curl_close($ch);
-        //var_dump($data); exit;
+
+
+        ob_start();
+        print_r($data);
+        $contents = ob_get_contents();
+        ob_end_clean();
+        error_log($contents);
+
+
         $user=User::find($data['id']);
         if($user==null)
         {
@@ -80,14 +112,22 @@ class SongController extends BaseController {
         }
         else
         {
+            error_log("going to update and login");
             $user->access_token=$callbackResult['access_token'];
-            $user->refresh_token=$callbackResult['refresh_token'];
+            if(isset($callbackResult['refresh_token'])){$user->refresh_token=$callbackResult['refresh_token'];}
             $user->save();
             Auth::login($user);
         }
+        error_log("herg");
+        switch($type){
+            case "initial":
+                return Redirect::action('SongController@getSpotifyProfile');
+                break;
+            case "refresh":
+                return;
+                break;
 
-        return Redirect::action('SongController@getSpotifyProfile');
-
+        }
 
     }
     public function getSpotifyProfile()
@@ -233,13 +273,19 @@ class SongController extends BaseController {
         $result=json_decode(curl_exec($ch),true);
         curl_close($ch);
         //var_dump($result);
-        if(isset($result['error'])){error_log("need to update token");}
+        error_log(Auth::user()->access_token);
+        if(isset($result['error'])){error_log("need to update token");
+            $this->spotifyCallback(0,"refresh");
+
+            error_log("trying again!");
+            $this->removeTrackFromPlaylist($playlist_id,$track_id);}
         error_log("removing track ".$track_id." from playlist ".$playlist_id);
         ob_start();
         print_r($result);
         $contents = ob_get_contents();
         ob_end_clean();
         error_log($contents);
+
     }
 
 }
