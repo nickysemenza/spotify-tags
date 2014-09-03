@@ -11,19 +11,16 @@ class SongController extends BaseController {
 
     public function spotifyAuth()
     {
-        $response = Unirest::get("https://accounts.spotify.com/authorize", array( "Accept" => "application/json" ),
-            array(
-                "client_id" => "d27efb143d5d4719959e523a5cbfa3c4",
-                "response_type" => "code",
-                "redirect_uri"=>URL::to('/auth/spotify/callback'),
-                "show_dialog"=>"true",
-                "scope"=>implode(' ',array('user-read-private', 'user-read-email','user-library-read','user-library-modify','playlist-modify','playlist-modify-public','playlist-modify-private'))
-            )
+        $params=array(
+            "client_id" => "d27efb143d5d4719959e523a5cbfa3c4",
+            "response_type" => "code",
+            "redirect_uri"=>URL::to('/auth/spotify/callback'),
+            "show_dialog"=>"true",
+            "scope"=>implode(' ',array('user-read-private', 'user-read-email','user-library-read','user-library-modify','playlist-modify','playlist-modify-public','playlist-modify-private','playlist-read-private'))
         );
-        return Redirect::to($response->body->redirect);
-
+        return Redirect::away("https://accounts.spotify.com/authorize?".http_build_query($params) . "\n");
     }
-    public function spotifyCallback($code="0")
+    public function spotifyCallback($code="0",$type="intial")
     {
         error_log($code);
         if($code=="0")
@@ -68,19 +65,26 @@ class SongController extends BaseController {
         $user=User::find($data['id']);
         if($user==null)
         {
-            echo("registration not complete");
-            $user = User::firstOrCreate(
+            error_log("registration not complete");
+            $newUser = User::firstOrCreate(
                 array(
                     'uid' => $data['id'],
                     'display_name'=>$data['display_name'],
                     'email'=>$data['email']
                 )
             );
+            $newUser->access_token=$callbackResult['access_token'];
+            $newUser->refresh_token=$callbackResult['refresh_token'];
+            $newUser->save();
+            Auth::login($newUser);
         }
-        $user->access_token=$callbackResult['access_token'];
-        $user->refresh_token=$callbackResult['refresh_token'];
-        $user->save();
-        Auth::login($user);
+        else
+        {
+            $user->access_token=$callbackResult['access_token'];
+            $user->refresh_token=$callbackResult['refresh_token'];
+            $user->save();
+            Auth::login($user);
+        }
 
         return Redirect::action('SongController@getSpotifyProfile');
 
@@ -89,6 +93,10 @@ class SongController extends BaseController {
     public function getSpotifyProfile()
     {
 
+        if(!Auth::check())
+        {
+            return Redirect::action('SongController@spotifyAuth');
+        }
         global $global_response;
 
         //get request
@@ -109,34 +117,47 @@ class SongController extends BaseController {
 
         $temp=array();
         $tagsAndPlaylistIDs=array();
+        Clockwork::info($data);
+        $playlistNames=array();
         for($x=0; $x<$data['limit']; $x++)
         {
+            if($data['items'][$x]['owner']['id']==Auth::user()->uid)
+            {
             $id=$data['items'][$x]['id'];
-            $rc->request("https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id);
+            $rc->request("https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id."/tracks?limit=600");
+            $playlistNames[$id]=$data['items'][$x]['name'];
+            }
         }
 
         $rc->options = array(CURLOPT_HTTPHEADER => array("Authorization: Bearer ".Auth::user()->access_token), CURLOPT_RETURNTRANSFER => 1);
         $test = $rc->execute();
-
+        Clockwork::info($global_response);
+//        $data='';
+//        return View::make('test',compact('data'));
+//        ob_start();
+//        print_r($global_response);
+//        $contents = ob_get_contents();
+//        ob_end_clean();
+//        error_log($contents);
         foreach($global_response as $eachPlaylist)
         {
-
-            $playlistName=$eachPlaylist['name'];
-            if($eachPlaylist['tracks']['total']<$eachPlaylist['tracks']['limit'])
+            $playlistID=(substr($eachPlaylist['href'],(strpos($eachPlaylist['href'], "/playlists/")+11),22));
+            $playlistName=$playlistNames[$playlistID];
+            if($eachPlaylist['total']<$eachPlaylist['limit'])
             {
-                $stopAt=$eachPlaylist['tracks']['total'];
+                $stopAt=$eachPlaylist['total'];
             }
             else
             {
-                $stopAt=$eachPlaylist['tracks']['limit'];
+                $stopAt=$eachPlaylist['limit'];
             }
             for($y=0; $y<$stopAt; $y++)
             {
 
-                $temp[$eachPlaylist['tracks']['items'][$y]['track']['id']]['tags'][]=array("tagname"=>$playlistName,"playlist_id"=>$id);
-                $temp[$eachPlaylist['tracks']['items'][$y]['track']['id']]['name']=$eachPlaylist['tracks']['items'][$y]['track']['name'];
-                $temp[$eachPlaylist['tracks']['items'][$y]['track']['id']]['artists']=implode(', ', array_column($eachPlaylist['tracks']['items'][$y]['track']['artists'], 'name'));
-                $taginfo=array('name'=>$playlistName,'playlist_id'=>$eachPlaylist['id'],'user_id'=>Auth::user()->id);
+                $temp[$eachPlaylist['items'][$y]['track']['id']]['tags'][]=array("tagname"=>$playlistName,"playlist_id"=>$id);
+                $temp[$eachPlaylist['items'][$y]['track']['id']]['name']=$eachPlaylist['items'][$y]['track']['name'];
+                $temp[$eachPlaylist['items'][$y]['track']['id']]['artists']=implode(', ', array_column($eachPlaylist['items'][$y]['track']['artists'], 'name'));
+                $taginfo=array('name'=>$playlistName,'playlist_id'=>$playlistID,'user_id'=>Auth::user()->id);
                 if(!in_array($taginfo,$tagsAndPlaylistIDs,true))
                 {
                     array_push($tagsAndPlaylistIDs,$taginfo);
@@ -146,26 +167,26 @@ class SongController extends BaseController {
 
 
         }
-
-
-
         $affectedRows = Tags::where('user_id', '=', Auth::user()->id)->delete();
+        function compare_name($a, $b)
+        {
+            return strnatcmp($a['name'], $b['name']);
+        }
+
+        // sort alphabetically by name
+        usort($tagsAndPlaylistIDs, 'compare_name');
+
         Tags::insert($tagsAndPlaylistIDs);
         $songData=$temp;
         $data['username']=Auth::id();
+        Clockwork::info($tagsAndPlaylistIDs);
         return View::make('main',compact('songData','tagsAndPlaylistIDs','data'));
 
     }
 
     function request_callback($response, $info) {
         global $global_response;
-        //var_dump(json_decode($response,true));
-//        //print_r($info);
-//        echo("<br>");
-        //array_push($global_response,json_decode($response,true));
         $global_response[]=json_decode($response,true);
-//        var_dump($global_response);
-        //return $response;
     }
     public function getTagsJSON()
     {
@@ -187,10 +208,16 @@ class SongController extends BaseController {
         curl_setopt($ch,CURLOPT_POSTFIELDS,'["spotify:track:'.$track_id.'"]');
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($ch, CURLOPT_HTTPHEADER,array("Authorization: Bearer ".Auth::user()->access_token));
-        $result=curl_exec($ch);
+        $result=json_decode(curl_exec($ch),true);
         curl_close($ch);
         //var_dump($result);
         error_log("adding track ".$track_id." to playlist ".$playlist_id);
+
+        ob_start();
+        print_r($result);
+        $contents = ob_get_contents();
+        ob_end_clean();
+        error_log($contents);
 
     }
     public function removeTrackFromPlaylist($playlist_id,$track_id)
@@ -203,16 +230,16 @@ class SongController extends BaseController {
         curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_HTTPHEADER,array("Authorization: Bearer ".Auth::user()->access_token));
-        $result = curl_exec($ch);
+        $result=json_decode(curl_exec($ch),true);
         curl_close($ch);
         //var_dump($result);
+        if(isset($result['error'])){error_log("need to update token");}
         error_log("removing track ".$track_id." from playlist ".$playlist_id);
-    }
-    public function jsNative()
-    {
-        $data['token']=Auth::user()->access_token;
-        return View::make('v2',compact('data'));
-
+        ob_start();
+        print_r($result);
+        $contents = ob_get_contents();
+        ob_end_clean();
+        error_log($contents);
     }
 
 }
