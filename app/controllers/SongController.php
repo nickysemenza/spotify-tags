@@ -69,11 +69,7 @@ class SongController extends BaseController {
 
         curl_close($ch);
 
-        ob_start();
-        print_r($callbackResult);
-        $contents = ob_get_contents();
-        ob_end_clean();
-        error_log($contents);
+
 
 
         //var_dump($callbackResult); exit;
@@ -87,11 +83,11 @@ class SongController extends BaseController {
         curl_close($ch);
 
 
-        ob_start();
-        print_r($data);
-        $contents = ob_get_contents();
-        ob_end_clean();
-        error_log($contents);
+//        ob_start();
+//        print_r($data);
+//        $contents = ob_get_contents();
+//        ob_end_clean();
+//        error_log($contents);
 
 
         $user=User::find($data['id']);
@@ -121,9 +117,11 @@ class SongController extends BaseController {
         error_log("herg");
         switch($type){
             case "initial":
+                error_log("initial");
                 return Redirect::action('SongController@getSpotifyProfile');
                 break;
             case "refresh":
+                error_log("refresh");
                 return;
                 break;
 
@@ -164,7 +162,16 @@ class SongController extends BaseController {
             if($data['items'][$x]['owner']['id']==Auth::user()->uid)
             {
             $id=$data['items'][$x]['id'];
-            $rc->request("https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id."/tracks?limit=600");
+                $this->er($id);
+            $numTracks= $data['items'][$x]['tracks']['total'];
+                $rc->request("https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id."/tracks?limit=100");
+                if($numTracks>4100)
+                {
+
+                    //$rc->request("https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id."/tracks?limit=3?offset=100");
+                    $offset=$numTracks-100;
+                    $rc->request("https://api.spotify.com/v1/users/14nicholasse/playlists/".$id."/tracks?offset=".$offset."&limit=100");
+                }
             $playlistNames[$id]=$data['items'][$x]['name'];
             }
         }
@@ -172,13 +179,8 @@ class SongController extends BaseController {
         $rc->options = array(CURLOPT_HTTPHEADER => array("Authorization: Bearer ".Auth::user()->access_token), CURLOPT_RETURNTRANSFER => 1);
         $test = $rc->execute();
         Clockwork::info($global_response);
-//        $data='';
-//        return View::make('test',compact('data'));
-//        ob_start();
-//        print_r($global_response);
-//        $contents = ob_get_contents();
-//        ob_end_clean();
-//        error_log($contents);
+
+        //$this->er($global_response);
         foreach($global_response as $eachPlaylist)
         {
             $playlistID=(substr($eachPlaylist['href'],(strpos($eachPlaylist['href'], "/playlists/")+11),22));
@@ -286,6 +288,14 @@ class SongController extends BaseController {
         ob_end_clean();
         error_log($contents);
 
+    }
+    public function er($data)
+    {
+        ob_start();
+        print_r($data);
+        $contents = ob_get_contents();
+        ob_end_clean();
+        error_log($contents);
     }
 
 }
