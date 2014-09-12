@@ -162,7 +162,7 @@ class SongController extends BaseController {
             if($data['items'][$x]['owner']['id']==Auth::user()->uid)
             {
             $id=$data['items'][$x]['id'];
-                $this->er($id);
+               // $this->er($id);
             $numTracks= $data['items'][$x]['tracks']['total'];
                 $rc->request("https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id."/tracks?limit=100");
                 if($numTracks>100)
@@ -170,7 +170,12 @@ class SongController extends BaseController {
                     $next=100;
                     while($next<$numTracks)
                     {
-                        $rc->request("https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id."/tracks?offset=".$next."&limit=100");
+                        $limit=100;
+                        if($next+100>$numTracks)
+                        {
+                            $limit=$numTracks-$next;
+                        }
+                        $rc->request("https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id."/tracks?offset=".$next."&limit=".$limit);
                         $next=$next+100;
                         $this->er($next);
                     }
@@ -187,32 +192,40 @@ class SongController extends BaseController {
         $test = $rc->execute();
         Clockwork::info($global_response);
 
-        //$this->er($global_response);
+        $this->er($global_response);
         foreach($global_response as $eachPlaylist)
         {
-            $playlistID=(substr($eachPlaylist['href'],(strpos($eachPlaylist['href'], "/playlists/")+11),22));
-            $playlistName=$playlistNames[$playlistID];
-            if($eachPlaylist['total']<$eachPlaylist['limit'])
+            if(isset($eachPlaylist['error']))
             {
-                $stopAt=$eachPlaylist['total'];
+                error_log("uhh something broke");
             }
             else
             {
-                $stopAt=$eachPlaylist['limit'];
-            }
-            for($y=0; $y<$stopAt; $y++)
-            {
-
-                $temp[$eachPlaylist['items'][$y]['track']['id']]['tags'][]=array("tagname"=>$playlistName,"playlist_id"=>$id);
-                $temp[$eachPlaylist['items'][$y]['track']['id']]['name']=$eachPlaylist['items'][$y]['track']['name'];
-                $temp[$eachPlaylist['items'][$y]['track']['id']]['artists']=implode(', ', array_column($eachPlaylist['items'][$y]['track']['artists'], 'name'));
-                $taginfo=array('name'=>$playlistName,'playlist_id'=>$playlistID,'user_id'=>Auth::user()->id);
-                if(!in_array($taginfo,$tagsAndPlaylistIDs,true))
+                $playlistID=(substr($eachPlaylist['href'],(strpos($eachPlaylist['href'], "/playlists/")+11),22));
+                $playlistName=$playlistNames[$playlistID];
+                if($eachPlaylist['total']<$eachPlaylist['limit'])
                 {
-                    array_push($tagsAndPlaylistIDs,$taginfo);
+                    $stopAt=$eachPlaylist['total'];
                 }
+                else
+                {
+                    $stopAt=$eachPlaylist['limit'];
+                }
+                for($y=0; $y<$stopAt; $y++)
+                {
 
+                    $temp[$eachPlaylist['items'][$y]['track']['id']]['tags'][]=array("tagname"=>$playlistName,"playlist_id"=>$id);
+                    $temp[$eachPlaylist['items'][$y]['track']['id']]['name']=$eachPlaylist['items'][$y]['track']['name'];
+                    $temp[$eachPlaylist['items'][$y]['track']['id']]['artists']=implode(', ', array_column($eachPlaylist['items'][$y]['track']['artists'], 'name'));
+                    $taginfo=array('name'=>$playlistName,'playlist_id'=>$playlistID,'user_id'=>Auth::user()->id);
+                    if(!in_array($taginfo,$tagsAndPlaylistIDs,true))
+                    {
+                        array_push($tagsAndPlaylistIDs,$taginfo);
+                    }
+
+                }
             }
+
 
 
         }
