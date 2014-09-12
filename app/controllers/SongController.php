@@ -165,12 +165,12 @@ class SongController extends BaseController {
                 $this->er($id);
             $numTracks= $data['items'][$x]['tracks']['total'];
                 $rc->request("https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id."/tracks?limit=100");
-                if($numTracks>4100)
+                if($numTracks>100)
                 {
-
+        
                     //$rc->request("https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id."/tracks?limit=3?offset=100");
                     $offset=$numTracks-100;
-                    $rc->request("https://api.spotify.com/v1/users/14nicholasse/playlists/".$id."/tracks?offset=".$offset."&limit=100");
+                    $rc->request("https://api.spotify.com/v1/users/".Auth::user()->uid."/playlists/".$id."/tracks?offset=".$offset."&limit=100");
                 }
             $playlistNames[$id]=$data['items'][$x]['name'];
             }
